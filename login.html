@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#070b14">
+<meta name="description" content="Log in to your Oriventa Markets account."><title>Oriventa Markets | Log In</title><link rel="stylesheet" href="styles.css"></head><body>
+<header><div class="bar"><a class="brand" href="index.html" aria-label="Oriventa Markets home"><svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3dd6a3"/><stop offset="1" stop-color="#5b8cff"/></linearGradient></defs><rect width="32" height="32" rx="9" fill="url(#g)"/><path d="M7 21l6-7 4 4 8-10" fill="none" stroke="#04131a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><div>ORIVENTA<small>MARKETS</small></div></a>
+<nav id="nav"><a href="index.html" data-p="index">Home</a><a href="signup.html#terms" data-p="terms">Terms</a><a href="login.html" data-p="login">Log in</a><a href="signup.html" class="cta" data-p="signup">Sign up</a></nav></div></header>
+<main><div class="authwrap"><form id="loginform" novalidate>
+<h2>Welcome back</h2><p class="sub">Log in with your username or email.</p>
+<div class="notice" id="notice" role="status" aria-live="polite"></div>
+<div class="f" data-f="id"><label for="id">Username or email</label><input id="id" name="username" type="text" autocomplete="username" autocapitalize="off" spellcheck="false" required><div class="msg"></div></div>
+<div class="f" data-f="pw"><label for="pw">Password</label><div class="in pw"><input id="pw" name="password" type="password" autocomplete="current-password" required><button type="button" class="eye" id="eye" aria-label="Show password">Show</button></div><div class="msg"></div></div>
+<button class="go" id="loginbtn" type="submit">Log in</button>
+<div class="row2"><span>No account yet? <a href="signup.html">Create one</a></span><a href="index.html">Back to home</a></div>
+</form></div></main><footer>&copy; <span id="yr"></span> Oriventa Markets. All rights reserved. Digital asset trading involves substantial risk of loss.</footer>
+<script src="app.js"></script>
+<script>
+const $=s=>document.querySelector(s);
+function note(t,type,html){const n=$('#notice');n.className='notice show '+type;if(html)n.innerHTML=t;else n.textContent=t}
+function fieldErr(id,m){const f=document.querySelector('[data-f="'+id+'"]');f.classList.add('err');f.querySelector('.msg').textContent=m}
+function clearErr(){document.querySelectorAll('.f').forEach(f=>{f.classList.remove('err');f.querySelector('.msg').textContent=''})}
+const q=new URLSearchParams(location.search);
+if(q.get('registered')){note('Account created. Please log in below.','ok');$('#id').value=q.get('registered');setTimeout(()=>$('#pw').focus(),50)}
+if(q.get('out')){note('You have been logged out.','ok')}
+$('#eye').addEventListener('click',()=>{const i=$('#pw'),s=i.type==='password';i.type=s?'text':'password';$('#eye').textContent=s?'Hide':'Show'});
+let fails=0,lockUntil=0;
+$('#loginform').addEventListener('submit',async e=>{
+ e.preventDefault();clearErr();$('#notice').className='notice';
+ const id=$('#id').value.trim(),pw=$('#pw').value;let bad=false;
+ if(!id){fieldErr('id','Enter your username or email.');bad=true}
+ if(!pw){fieldErr('pw','Enter your password.');bad=true}
+ if(bad)return;
+ if(Date.now()<lockUntil){note('Too many attempts. Wait '+Math.ceil((lockUntil-Date.now())/1000)+' seconds and try again.','bad');return}
+ const btn=$('#loginbtn');btn.disabled=true;btn.textContent='Checking...';
+ try{
+  const r=await Store.login(id,pw);
+  if(r.status==='nouser'){note('No account found. You need to <a href="signup.html">create an account</a> before you can log in.','bad',true)}
+  else if(r.status==='badpw'){fails++;fieldErr('pw','Incorrect password.');if(fails>=5){lockUntil=Date.now()+30000;fails=0;note('Too many attempts. Please wait 30 seconds.','bad')}}
+  else{Store.setSession(r.user.username);location.href='dashboard.html'}
+ }catch(err){note(err.message||'Something went wrong. Please try again.','bad')}
+ finally{btn.disabled=false;btn.textContent='Log in'}
+});
+</script>
+</body></html>
